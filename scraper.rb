@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'nokogiri'
 require 'open-uri'
+require 'csv'
 require 'ruby-debug'
 
 module AndroidMarketScraper
@@ -34,8 +35,10 @@ module AndroidMarketScraper
     end
 
     def output_report
-      @app_infos.each do |app|
-        puts "#{app.title}, #{app.market_rank}"
+      CSV::Writer.generate(STDOUT) do |csv|
+        @app_infos.each do |app|
+          csv << [app.title, app.market_rank]
+        end
       end
     end
   end
@@ -73,4 +76,8 @@ module AndroidMarketScraper
   end
 end
 
-AndroidMarketScraper::Scraper.new.scrape(:max_pages => 5, :category => 'GAME', :purchase_type => 'paid').output_report
+AndroidMarketScraper::Scraper.new.scrape(
+  :max_pages => 5,
+  :category => 'GAME',
+  :purchase_type => 'paid'
+).output_report
