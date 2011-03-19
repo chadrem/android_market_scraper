@@ -94,7 +94,7 @@ module AndroidMarketScraper
 end
 
 AndroidMarketScraper::Scraper.new.scrape(
-  :max_pages => 02          # Seems to go up to about 35.  Check the website.
+  :max_pages => 40,         # Seems to go up to about 35.  Check the website.
   :category => 'GAME',      # Many categories based on URL (example: https://market.android.com/apps/GAME/)
-  :purchase_type => 'paid'  # paid or free.
+  :purchase_type => 'free'  # paid or free.
 ).output_report
