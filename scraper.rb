@@ -6,7 +6,7 @@ require 'ruby-debug'
 
 module AndroidMarketScraper
   class AppInfo
-    ATTRIBUTES = [:market_rank, :title, :developer, :price_usd, :market_id, :stars]
+    ATTRIBUTES = [:market_rank, :title, :developer, :price_usd, :market_id, :market_url, :stars]
 
     def initialize(options={})
       ATTRIBUTES.each do |attrib|
@@ -74,14 +74,17 @@ module AndroidMarketScraper
           market_id = details_node.css('.title').first.attributes['href'].to_s.gsub('/details?id=', '')
 
           stars_text = snippet_node.css('.ratings').first.attributes['title'].value
-          stars      = /Rating: (.+) stars .*/.match(stars_text)[1]
+          stars = /Rating: (.+) stars .*/.match(stars_text)[1]
+
+          market_url = "https://market.android.com/details?id=#{market_id}"
 
           if price_usd == 'Install'
             price_usd = '$0.00'
           end
 
           app_info_set << AppInfo.new(:title => title, :price_usd => price_usd, :developer => developer,
-                                      :stars => stars, :market_id => market_id, :market_rank => (market_rank+=1))
+                                      :stars => stars, :market_id => market_id, :market_url => market_url,
+                                      :market_rank => (market_rank+=1))
         end
       end
 
@@ -91,7 +94,7 @@ module AndroidMarketScraper
 end
 
 AndroidMarketScraper::Scraper.new.scrape(
-  :max_pages => 10,
-  :category => 'GAME',
-  :purchase_type => 'paid'
+  :max_pages => 02          # Seems to go up to about 35.  Check the website.
+  :category => 'GAME',      # This can be many things based on the url (example: https://market.android.com/apps/GAME/)
+  :purchase_type => 'paid'  # paid or free.
 ).output_report
