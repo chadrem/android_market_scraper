@@ -6,7 +6,9 @@ require 'ruby-debug'
 
 module AndroidMarketScraper
   class AppInfo
-    ATTRIBUTES = [:market_rank, :title, :developer, :price_usd, :market_id, :market_url, :stars]
+    ATTRIBUTES = [:market_rank, :title, :developer, :price_usd, :market_id, :market_url, :stars,
+                  :updated, :app_version, :minimum_android_version, :category, :installs,
+                  :installs_min, :installs_max, :size]
 
     def initialize(options={})
       ATTRIBUTES.each do |attrib|
@@ -58,6 +60,7 @@ module AndroidMarketScraper
       market_rank = 0
       app_info_set = AppInfoSet.new
 
+      # Loop through every rankings page.
       (0..max_pages).each do |page|
         start_offset = 24 * page
 
@@ -65,8 +68,11 @@ module AndroidMarketScraper
         url_params = "?id=apps_topselling_#{purchase_type}&cat=#{category}&start=#{start_offset}&num=24"
         doc = Nokogiri::HTML(open(base_url + url_params))
 
+        # Loop through every app on a specific rankings page.
         doc.css('.snippet').each do |snippet_node|
           details_node = snippet_node.css('.details')
+
+          # App info from the rankings page.
 
           title     = details_node.css('.title').first.attributes['title'].to_s
           price_usd = details_node.css('.buy-button-price').children.first.text.gsub(' Buy', '')
@@ -82,9 +88,35 @@ module AndroidMarketScraper
             price_usd = '$0.00'
           end
 
-          app_info_set << AppInfo.new(:title => title, :price_usd => price_usd, :developer => developer,
-                                      :stars => stars, :market_id => market_id, :market_url => market_url,
-                                      :market_rank => (market_rank+=1))
+          $stderr.puts "Processing app: #{title}"
+
+          # App info from the application specific page.
+
+          app_specific_doc = Nokogiri::HTML(open(market_url))
+          about_node = app_specific_doc.css('.doc-metadata').first.elements[2]
+
+          updated                 = about_node.elements[3].text
+          app_version             = about_node.elements[5].text
+          minimum_android_version = about_node.elements[7].text
+          app_category            = about_node.elements[9].text
+          installs                = about_node.elements[11].text
+          size                    = about_node.elements[13].text
+
+          minimum_android_version.gsub!(' and up', '')
+
+          installs_min = installs.split(' - ')[0]
+          installs_max = installs.split(' - ')[1]
+
+          # Build an AppInfo object and append it to the app info set.
+
+          app_info = AppInfo.new(:title => title, :price_usd => price_usd, :developer => developer,
+                                 :stars => stars, :market_id => market_id, :market_url => market_url,
+                                 :market_rank => (market_rank+=1), :updated => updated,
+                                 :app_version => app_version, :minimum_android_version => minimum_android_version,
+                                 :category => app_category, :installs => installs,
+                                 :installs_min => installs_min, :installs_max => installs_max, :size => size)
+
+          app_info_set << app_info
         end
       end
 
@@ -94,7 +126,7 @@ module AndroidMarketScraper
 end
 
 AndroidMarketScraper::Scraper.new.scrape(
-  :max_pages => 40,         # Seems to go up to about 35.  Check the website.
+  :max_pages => 01,         # Seems to go up to about 35.  Check the website.
   :category => 'GAME',      # Many categories based on URL (example: https://market.android.com/apps/GAME/)
-  :purchase_type => 'free'  # paid or free.
+  :purchase_type => 'paid'  # paid or free.
 ).output_report
