@@ -1,6 +1,8 @@
 require 'rubygems'
-require 'nokogiri'
+require 'net/http'
+require 'net/https'
 require 'open-uri'
+require 'nokogiri'
 require 'csv'
 require 'ruby-debug'
 
@@ -52,6 +54,16 @@ module AndroidMarketScraper
       @default_max_pages = 35
     end
 
+    def fetch(url)
+      url = URI.parse(url)
+      http = Net::HTTP.new(url.host, url.port)
+      http.use_ssl = true if url.port == 443
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE if url.port == 443
+      path = url.path + "?" + url.query
+      res, data = http.get(path)
+      return data
+    end
+
     def scrape(options={})
       max_pages = options[:max_pages] || @default_max_pages
       category = options[:category] || 'GAME'
@@ -66,7 +78,7 @@ module AndroidMarketScraper
 
         base_url = "https://market.android.com/details"
         url_params = "?id=apps_topselling_#{purchase_type}&cat=#{category}&start=#{start_offset}&num=24"
-        doc = Nokogiri::HTML(open(base_url + url_params))
+        doc = Nokogiri::HTML(fetch(base_url + url_params))
 
         # Loop through every app on a specific rankings page.
         doc.css('.snippet').each do |snippet_node|
@@ -92,7 +104,7 @@ module AndroidMarketScraper
 
           # App info from the application specific page.
 
-          app_specific_doc = Nokogiri::HTML(open(market_url))
+          app_specific_doc = Nokogiri::HTML(fetch(market_url))
           about_node = app_specific_doc.css('.doc-metadata').first.elements[2]
 
           updated                 = about_node.elements[3].text
@@ -128,5 +140,5 @@ end
 AndroidMarketScraper::Scraper.new.scrape(
   :max_pages => 01,         # Seems to go up to about 35.  Check the website.
   :category => 'GAME',      # Many categories based on URL (example: https://market.android.com/apps/GAME/)
-  :purchase_type => 'paid'  # paid or free.
+  :purchase_type => 'free'  # paid or free.
 ).output_report
