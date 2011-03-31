@@ -1,7 +1,6 @@
 require 'rubygems'
 require 'net/http'
 require 'net/https'
-require 'open-uri'
 require 'nokogiri'
 require 'csv'
 require 'ruby-debug'
@@ -61,6 +60,7 @@ module AndroidMarketScraper
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE if url.port == 443
       path = url.path + "?" + url.query
       res, data = http.get(path)
+
       return data
     end
 
