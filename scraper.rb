@@ -3,7 +3,7 @@ require 'net/http'
 require 'net/https'
 require 'nokogiri'
 require 'csv'
-require 'ruby-debug'
+require 'ruby-debug' rescue nil
 
 module AndroidMarketScraper
   class AppInfo
